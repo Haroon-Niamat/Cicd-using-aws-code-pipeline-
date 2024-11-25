@@ -19,4 +19,4 @@ docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/flask-app:
 
 
 # Run the Docker container
-docker run  -d --name flask-app -p 3000:3000 --env-file /home/ec2-user/env.list $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/flask-app:latest
+docker run  -d --name flask-app -p 3000:3000 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/flask-app:latest
