@@ -6,6 +6,6 @@ files:
 
 hooks:
   ApplicationStart:
-    - location: scripts/run_docker_container.sh
+    - location: ./deploy.sh
       runas: root
       
