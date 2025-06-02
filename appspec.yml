@@ -2,10 +2,9 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /opt/codedeploy-agent/deployment-root/deployment-archive
-
+    destination: /home/ubuntu/app
 hooks:
   ApplicationStart:
-    - location: ./deploy.sh
+    - location: deploy.sh
+      timeout: 300
       runas: root
-      
