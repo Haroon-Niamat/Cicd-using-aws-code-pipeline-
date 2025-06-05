@@ -23,7 +23,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t $ECR_REPO_URL:${{ env.BUILD_NUMBER }} .
+          docker build -t ${{secrets.ECR_REPO_URL}}:${{ env.BUILD_NUMBER }} .
           docker tag $ECR_REPO_URL:${{ env.BUILD_NUMBER }} $ECR_REPO_URL:latest
 
       - name: Push Docker images to ECR
