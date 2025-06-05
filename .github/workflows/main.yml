@@ -7,22 +7,24 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: test  # Your self-hosted runner with ECR access
-
-    env:
-      ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}  # Full ECR URL (e.g., account-id.dkr.ecr.region.amazonaws.com/repo-name)
-      BUILD_TAG: ${{ github.run_number }}
+    runs-on: test  # Your self-hosted runner
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Build Docker image
+        env:
+          ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}  # Ensure this secret is set in GitHub
+          BUILD_TAG: ${{ github.run_number }}
         run: |
+          echo "Building image: ${ECR_REPO_URL}:${BUILD_TAG}"
           docker build -t ${ECR_REPO_URL}:${BUILD_TAG} .
           docker tag ${ECR_REPO_URL}:${BUILD_TAG} ${ECR_REPO_URL}:latest
 
       - name: Push Docker images to ECR
+        env:
+          ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}
         run: |
           docker push ${ECR_REPO_URL}:${BUILD_TAG}
           docker push ${ECR_REPO_URL}:latest
