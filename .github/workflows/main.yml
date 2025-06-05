@@ -11,7 +11,7 @@ jobs:
 
     env:
       AWS_REGION: us-east-1
-      ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}
+      ECR_REPO: ${{ secrets.ECR_REPO_URL }}
       BUILD_NUMBER: ${{ github.run_number }}
 
     steps:
@@ -23,8 +23,8 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{env.ECR_REPO_URL}}:${{ env.BUILD_NUMBER }} .
-          docker tag ${{env.ECR_REPO_URL}}:${{ env.BUILD_NUMBER }} $ECR_REPO_URL:latest
+          docker build -t $ECR_REPO:${{ env.BUILD_NUMBER }} .
+          docker tag $ECR_REPO:${{ env.BUILD_NUMBER }} $ECR_REPO_URL:latest
 
       - name: Push Docker images to ECR
         run: |
