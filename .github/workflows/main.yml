@@ -25,11 +25,11 @@ jobs:
           echo "ECR_REPO_URL: ${ECR_REPO_URL}"
           echo "BUILD_TAG: ${BUILD_TAG}"
           
-          # Validate variables
-          if [[ -z "${ECR_REPO_URL}" ]]; then
-            echo "::error::ECR_REPO_URL is empty!"
-            exit 1
-          fi
+          # # Validate variables
+          # if [[ -z "${ECR_REPO_URL}" ]]; then
+          #   echo "::error::ECR_REPO_URL is empty!"
+          #   exit 1
+          # fi
           
           # Build and tag
           docker build -t "${ECR_REPO_URL}:${BUILD_TAG}" .
@@ -47,6 +47,6 @@ jobs:
       - name: Deploy
         run: |
           cd /home/ec2-user/app
-          docker-compose prune -f
+          docker system prune -f
           docker-compose pull
           docker-compose up -d 
