@@ -12,26 +12,23 @@ jobs:
     env:
       AWS_REGION: us-east-1
       ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}
+      BUILD_NUMBER: ${{ github.run_number }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Extract short commit ID
-        id: vars
-        run: echo "COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
-
       # - name: Login to Amazon ECR
       #   run: |
       #     aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URL
 
       - name: Build Docker image
         run: |
-          docker build -t $ECR_REPO_URL:${{ env.COMMIT_ID }} .
-          docker tag $ECR_REPO_URL:${{ env.COMMIT_ID }} $ECR_REPO_URL:latest
+          docker build -t $ECR_REPO_URL:${{ env.BUILD_NUMBER }} .
+          docker tag $ECR_REPO_URL:${{ env.BUILD_NUMBER }} $ECR_REPO_URL:latest
 
       - name: Push Docker images to ECR
         run: |
-          docker push $ECR_REPO_URL:${{ env.COMMIT_ID }}
+          docker push $ECR_REPO_URL:${{ env.BUILD_NUMBER }}
           docker push $ECR_REPO_URL:latest
 
       - name: Deploy with docker-compose
