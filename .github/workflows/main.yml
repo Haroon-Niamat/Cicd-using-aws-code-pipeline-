@@ -1,4 +1,7 @@
-trigger: none
+trigger:
+  branches:
+    include:
+      - main
 
 pool:
   name: test  # Your self-hosted runner
@@ -40,7 +43,8 @@ stages:
 
           - script: |
               echo "Deploying using docker-compose..."
-              cd app
+              cd /home/ec2-user/app
+              docker system prune -f
               docker-compose pull
               docker-compose up -d
             displayName: Docker Compose Deploy
