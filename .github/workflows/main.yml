@@ -1,0 +1,46 @@
+trigger: none
+
+pool:
+  name: test  # Your self-hosted runner
+
+variables:
+  AWS_REGION: 'us-east-1'
+  IMAGE_NAME: 'test-cicd'
+  ECR_REPO_URL: '$(ECR_REPO_URL)'  # Secret variable
+
+stages:
+  - stage: BuildAndDeploy
+    jobs:
+      - job: BuildPushDeploy
+        steps:
+          - checkout: self
+
+          - script: |
+              echo "Getting commit ID..."
+              COMMIT_ID=$(echo $(Build.SourceVersion) | cut -c1-7)
+              echo "##vso[task.setvariable variable=COMMIT_ID]$COMMIT_ID"
+            displayName: Extract Commit ID
+
+          - script: |
+              echo "Logging into ECR..."
+              aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URL
+            displayName: ECR Login
+
+          - script: |
+              echo "Building image with tags: $COMMIT_ID and latest"
+              docker build -t $ECR_REPO_URL:$(COMMIT_ID) .
+              docker tag $ECR_REPO_URL:$(COMMIT_ID) $ECR_REPO_URL:latest
+            displayName: Build and Tag Image
+
+          - script: |
+              echo "Pushing image to ECR..."
+              docker push $ECR_REPO_URL:$(COMMIT_ID)
+              docker push $ECR_REPO_URL:latest
+            displayName: Push to ECR
+
+          - script: |
+              echo "Deploying using docker-compose..."
+              cd app
+              docker-compose pull
+              docker-compose up -d
+            displayName: Docker Compose Deploy
