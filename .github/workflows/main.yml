@@ -7,38 +7,46 @@ on:
 jobs:
   build-and-deploy:
     runs-on: test
-    environment: dev  # Reference your environment here
+    environment: dev  # Make sure this matches your environment name exactly
     
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Verify secrets
-        run: |
-          echo "ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}"
-          echo "BUILD_TAG: ${{ github.run_number }}"
-        shell: bash
-
-      - name: Build Docker image
+      - name: Build and tag Docker image
         env:
           ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}
           BUILD_TAG: ${{ github.run_number }}
         run: |
-          if [ -z "$ECR_REPO_URL" ]; then
-            echo "::error::ECR_REPO_URL secret is empty!"
+          echo "ECR_REPO_URL: ${ECR_REPO_URL}"
+          echo "BUILD_TAG: ${BUILD_TAG}"
+          
+          # Validate variables
+          if [[ -z "${ECR_REPO_URL}" ]]; then
+            echo "::error::ECR_REPO_URL is empty!"
             exit 1
           fi
-          echo "Building: ${ECR_REPO_URL}:${BUILD_TAG}"
-          docker build -t ${ECR_REPO_URL}:${BUILD_TAG} .
-          docker tag ${ECR_REPO_URL}:${BUILD_TAG} ${ECR_REPO_URL}:latest
+          
+          # Build and tag
+          docker build -t "${ECR_REPO_URL}:${BUILD_TAG}" .
+          docker tag "${ECR_REPO_URL}:${BUILD_TAG}" "${ECR_REPO_URL}:latest"
 
-      - name: Push to ECR
+      - name: Push Docker images
+        env:
+          ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}
+          BUILD_TAG: ${{ github.run_number }}
         run: |
-          docker push ${ECR_REPO_URL}:${BUILD_TAG}
-          docker push ${ECR_REPO_URL}:latest
+          echo "Pushing: ${ECR_REPO_URL}:${BUILD_TAG}"
+          docker push "${ECR_REPO_URL}:${BUILD_TAG}"
+          docker push "${ECR_REPO_URL}:latest"
 
       - name: Deploy
         run: |
           cd /home/ec2-user/app
+          docker-compose prune -f
           docker-compose pull
-          docker-compose up -d
+          docker-compose up -d 
