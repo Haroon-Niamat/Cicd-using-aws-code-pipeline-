@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: test  # Aapka self-hosted runner
+    runs-on: test  # Aapka self-hosted runner 
 
     env:
       AWS_REGION: us-east-1
