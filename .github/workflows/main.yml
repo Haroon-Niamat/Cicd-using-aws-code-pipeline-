@@ -1,46 +1,50 @@
-name: Build and Deploy to ECR
-
+name: Build & Push Backend Docker Image
 on:
   push:
-    branches: [main]
+    branches:
+      - cicd-prod
+  workflow_dispatch:
+
+permissions:
+  id-token: write  # Required for OIDC authentication with AWS
+  contents: read
 
 jobs:
-  build-and-deploy:
-    runs-on: test
-    environment: dev 
-    
-    defaults:
-      run:
-        shell: bash
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-west-1
+      ROLE_NAME: d1-cicd-role
+      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Build and tag Docker image
-        env:
-          ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}
-          BUILD_TAG: ${{ github.run_number }}
-        run: |
-          echo "ECR_REPO_URL: ${ECR_REPO_URL}"
-          echo "BUILD_TAG: ${BUILD_TAG}"
-          
-          # Build and tag
-          docker build -t "${ECR_REPO_URL}:${BUILD_TAG}" .
-          docker tag "${ECR_REPO_URL}:${BUILD_TAG}" "${ECR_REPO_URL}:latest"
+      - name: Get commit SHA (short)
+        id: vars
+        run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - name: Push Docker images
-        env:
-          ECR_REPO_URL: ${{ secrets.ECR_REPO_URL }}
-          BUILD_TAG: ${{ github.run_number }}
-        run: |
-          echo "Pushing: ${ECR_REPO_URL}:${BUILD_TAG}"
-          docker push "${ECR_REPO_URL}:${BUILD_TAG}"
-          docker push "${ECR_REPO_URL}:latest"
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.ROLE_NAME }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy
+      - name: Login to Private Amazon ECR
         run: |
-          cd /home/ec2-user/app
-          docker system prune -f
-          docker-compose pull
-          docker-compose up -d 
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+
+      - name: Build, Tag & Push Docker Image
+        run: |
+          ECR_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${ECR_REPOSITORY}
+
+          echo "Building Docker image..."
+          docker build -t $ECR_URI:${COMMIT_SHA} -t $ECR_URI:latest .
+
+          echo "Pushing Docker image with commit SHA tag..."
+          docker push $ECR_URI:${COMMIT_SHA}
+
+          echo "Pushing Docker image with latest tag..."
+          docker push $ECR_URI:latest
